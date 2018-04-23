@@ -45,6 +45,7 @@ class IBLRenderEngine(bpy.types.RenderEngine):
     bl_use_preview = False
     bl_use_shading_nodes = False
 
+    hdri = None
 
     def view_update(self, context):
         self.do_update(context.scene)
@@ -56,6 +57,13 @@ class IBLRenderEngine(bpy.types.RenderEngine):
     def do_update(self, scene):
         scene.world.ambient_color = [0.5, 0.5, 0.5]
         renderer_call('clean_resources')
+
+        if scene.world.ibl_hdri and scene.world.ibl_hdri != self.hdri:
+            hdri = scene.world.ibl_hdri
+            renderer_call("load_hdri",
+                          pack('iii', hdri.size[0], hdri.size[1], hdri.channels),
+                          pack('f'*len(hdri.pixels), *hdri.pixels))
+            self.hdri = hdri
 
         for object in scene.objects:
             if object.type == 'MESH' and object.hide_render == False:

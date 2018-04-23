@@ -93,6 +93,157 @@ unsigned int load_shader(const char* dir, const char* vs_path, const char* fs_pa
 	return program;
 }
 
+
+void draw_cube()
+{
+	static unsigned int VAO = 0;
+	static unsigned int VBO = 0;
+    if (VAO == 0)
+    {
+        float vertices[] = {
+            // back face
+            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+             1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+             1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
+             1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+            -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+            -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
+            // front face
+            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+             1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
+             1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+             1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+            -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
+            -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+            // left face
+            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+            -1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
+            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+            -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+            -1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+            -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+            // right face
+             1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+             1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+             1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right         
+             1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+             1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+             1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left     
+            // bottom face
+            -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+             1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
+             1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+             1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+            -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+            -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+            // top face
+            -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+             1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+             1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right     
+             1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+            -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+            -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
+        };
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glBindVertexArray(VAO);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+}
+
+unsigned int panorama_to_cubemap_shader = 0;
+unsigned int background_shader = 0;
+
+unsigned int hdr_texture = 0;
+unsigned int environment_cubemap = 0;
+
+EXPORT void load_hdri(unsigned char* data, int width, int height, int components)
+{
+	int resolution = 512;
+
+	//Setup FrameBuffers
+	unsigned int capture_FBO;
+	unsigned int capture_RBO;
+	glGenFramebuffers(1, &capture_FBO);
+	glGenRenderbuffers(1, &capture_RBO);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, capture_FBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, capture_RBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, resolution, resolution);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_RBO);
+
+	GLenum format = components == 3 ? GL_RGB : GL_RGBA;
+	//Load HDRI
+	glGenTextures(1, &hdr_texture);
+	glBindTexture(GL_TEXTURE_2D, hdr_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, format, GL_FLOAT, data);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	//Setup cubemap
+	glGenTextures(1, &environment_cubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, environment_cubemap);
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, 
+			GL_RGB16F, resolution, resolution, 0, GL_RGB, GL_FLOAT, nullptr);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    glm::mat4 views[] =
+    {
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+    };
+
+	glUseProgram(panorama_to_cubemap_shader);
+	glUniform1i(glGetUniformLocation(panorama_to_cubemap_shader, "panorama"), 0);
+
+	glUniformMatrix4fv(glGetUniformLocation(
+		panorama_to_cubemap_shader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdr_texture);
+
+	glViewport(0, 0, resolution, resolution);
+	glBindFramebuffer(GL_FRAMEBUFFER, capture_FBO);
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		glUniformMatrix4fv(glGetUniformLocation(
+			panorama_to_cubemap_shader, "view"), 1, GL_FALSE, glm::value_ptr(views[i]));
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, environment_cubemap, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		draw_cube();
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 EXPORT void load_texture(const char* name, unsigned char* data, int width, int height, int components)
 {
 	if (textures[name]) return;
@@ -239,6 +390,9 @@ EXPORT void initialize(const char* path, int width, int height, int msaa)
 	//glDebugMessageCallback((GLDEBUGPROC)glDebugOutput, nullptr);
 
 	basic_shader = load_shader(path, "basic.vs", "basic.fs");
+	panorama_to_cubemap_shader = load_shader(path, "cubemap.vs", "panorama_to_cubemap.fs");
+	background_shader = load_shader(path, "background.vs", "background.fs");
+	glUniform1i(glGetUniformLocation(background_shader, "cubemap"), 0);
 }
 
 EXPORT void resize(int width, int height, int msaa)
@@ -283,6 +437,10 @@ EXPORT void render_begin(float camera_position[3], float view_matrix[16], float 
 	glUniform3fv(glGetUniformLocation(basic_shader, "camPos"), 1, camera_position);
 	glUniformMatrix4fv(glGetUniformLocation(basic_shader, "projection"), 1, GL_FALSE, projection_matrix);
 	glUniformMatrix4fv(glGetUniformLocation(basic_shader, "view"), 1, GL_FALSE, view_matrix);
+
+	glUseProgram(background_shader);
+	glUniformMatrix4fv(glGetUniformLocation(background_shader, "projection"), 1, GL_FALSE, projection_matrix);
+	glUniformMatrix4fv(glGetUniformLocation(background_shader, "view"), 1, GL_FALSE, view_matrix);
 }
 
 EXPORT void draw_mesh(float transform[16], const char* mesh, float color[3])//,
@@ -303,6 +461,11 @@ std::vector<float> pixels = {};
 
 EXPORT float* render_end()
 {
+	glUseProgram(background_shader);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, environment_cubemap);
+	draw_cube();
+
 	pixels.reserve(FBO_width * FBO_height * 3);
 
 	glReadPixels(0, 0, FBO_width, FBO_height, GL_RGB, GL_FLOAT, pixels.data());
