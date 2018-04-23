@@ -165,9 +165,11 @@ void draw_cube()
 
 unsigned int panorama_to_cubemap_shader = 0;
 unsigned int background_shader = 0;
+unsigned int irradiance_shader = 0;
 
 unsigned int hdr_texture = 0;
 unsigned int environment_cubemap = 0;
+unsigned int irradiance_cubemap = 0;
 
 EXPORT void load_hdri(unsigned char* data, int width, int height, int components)
 {
@@ -237,6 +239,47 @@ EXPORT void load_hdri(unsigned char* data, int width, int height, int components
 			panorama_to_cubemap_shader, "view"), 1, GL_FALSE, glm::value_ptr(views[i]));
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
 			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, environment_cubemap, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		draw_cube();
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	//Setup irradiance cubemap
+	resolution = 32;
+
+	glGenTextures(1, &irradiance_cubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_cubemap);
+	for (unsigned int i = 0; i < 6; ++i)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+			0, GL_RGB16F, resolution, resolution, 0, GL_RGB, GL_FLOAT, nullptr);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, capture_FBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, capture_RBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, resolution, resolution);
+
+	glUseProgram(irradiance_shader);
+	glUniform1i(glGetUniformLocation(irradiance_shader, "environment_cubemap"), 0);
+	glUniformMatrix4fv(glGetUniformLocation(
+		irradiance_shader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, environment_cubemap);
+
+	glViewport(0, 0, resolution, resolution);
+	glBindFramebuffer(GL_FRAMEBUFFER, capture_FBO);
+	for (unsigned int i = 0; i < 6; ++i)
+	{
+		glUniformMatrix4fv(glGetUniformLocation(
+			irradiance_shader, "view"), 1, GL_FALSE, glm::value_ptr(views[i]));
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance_cubemap, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		draw_cube();
@@ -393,6 +436,7 @@ EXPORT void initialize(const char* path, int width, int height, int msaa)
 	panorama_to_cubemap_shader = load_shader(path, "cubemap.vs", "panorama_to_cubemap.fs");
 	background_shader = load_shader(path, "background.vs", "background.fs");
 	glUniform1i(glGetUniformLocation(background_shader, "cubemap"), 0);
+	irradiance_shader = load_shader(path, "cubemap.vs", "irradiance_convolution.fs");
 }
 
 EXPORT void resize(int width, int height, int msaa)
@@ -463,7 +507,7 @@ EXPORT float* render_end()
 {
 	glUseProgram(background_shader);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, environment_cubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_cubemap);
 	draw_cube();
 
 	pixels.reserve(FBO_width * FBO_height * 3);
