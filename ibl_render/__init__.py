@@ -182,7 +182,7 @@ def register():
     adress, port = socket.getsockname()
     script_file = os.path.realpath(__file__)
     directory = os.path.dirname(script_file)
-    subprocess.Popen(['python', os.path.join(directory, 'renderer.py'), str(port)])
+    subprocess.Popen([bpy.app.binary_path_python, os.path.join(directory, 'renderer.py'), str(port)])
     socket.listen()
     connection, adress = socket.accept()
     global __socket
