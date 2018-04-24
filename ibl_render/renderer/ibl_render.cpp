@@ -186,8 +186,8 @@ EXPORT void load_hdri(unsigned char* data, int width, int height, int components
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, resolution, resolution);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, capture_RBO);
 
-	GLenum format = components == 3 ? GL_RGB : GL_RGBA;
 	//Load HDRI
+	GLenum format = components == 3 ? GL_RGB : GL_RGBA;
 	glGenTextures(1, &hdr_texture);
 	glBindTexture(GL_TEXTURE_2D, hdr_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, format, GL_FLOAT, data);
@@ -197,19 +197,21 @@ EXPORT void load_hdri(unsigned char* data, int width, int height, int components
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	//Setup cubemap
-	glGenTextures(1, &environment_cubemap);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, environment_cubemap);
-	for (unsigned int i = 0; i < 6; i++)
+	auto generate_cubemap = [&](unsigned int& cubemap)
 	{
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, 
-			GL_RGB16F, resolution, resolution, 0, GL_RGB, GL_FLOAT, nullptr);
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glGenTextures(1, &cubemap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
+		for (unsigned int i = 0; i < 6; i++)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
+				GL_RGB16F, resolution, resolution, 0, GL_RGB, GL_FLOAT, nullptr);
+		}
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	};
 
 	glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
     glm::mat4 views[] =
@@ -222,69 +224,51 @@ EXPORT void load_hdri(unsigned char* data, int width, int height, int components
         glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
     };
 
+	auto render_to_cubemap = [&](unsigned int& cubemap, unsigned int& shader)
+	{
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, resolution, resolution);
+
+		glUniformMatrix4fv(glGetUniformLocation(
+			shader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+		glViewport(0, 0, resolution, resolution);
+		glBindFramebuffer(GL_FRAMEBUFFER, capture_FBO);
+		for (unsigned int i = 0; i < 6; i++)
+		{
+			glUniformMatrix4fv(glGetUniformLocation(
+				shader, "view"), 1, GL_FALSE, glm::value_ptr(views[i]));
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+				GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap, 0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			draw_cube();
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	};
+	
+	//Setup cubemap
+	resolution = 512;
+	generate_cubemap(environment_cubemap);
+
 	glUseProgram(panorama_to_cubemap_shader);
 	glUniform1i(glGetUniformLocation(panorama_to_cubemap_shader, "panorama"), 0);
-
-	glUniformMatrix4fv(glGetUniformLocation(
-		panorama_to_cubemap_shader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, hdr_texture);
 
-	glViewport(0, 0, resolution, resolution);
-	glBindFramebuffer(GL_FRAMEBUFFER, capture_FBO);
-	for (unsigned int i = 0; i < 6; i++)
-	{
-		glUniformMatrix4fv(glGetUniformLocation(
-			panorama_to_cubemap_shader, "view"), 1, GL_FALSE, glm::value_ptr(views[i]));
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
-			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, environment_cubemap, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		draw_cube();
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	render_to_cubemap(environment_cubemap, panorama_to_cubemap_shader);
 
 	//Setup irradiance cubemap
 	resolution = 32;
-
-	glGenTextures(1, &irradiance_cubemap);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance_cubemap);
-	for (unsigned int i = 0; i < 6; ++i)
-	{
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
-			0, GL_RGB16F, resolution, resolution, 0, GL_RGB, GL_FLOAT, nullptr);
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, capture_FBO);
-	glBindRenderbuffer(GL_RENDERBUFFER, capture_RBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, resolution, resolution);
+	generate_cubemap(irradiance_cubemap);
 
 	glUseProgram(irradiance_shader);
 	glUniform1i(glGetUniformLocation(irradiance_shader, "environment_cubemap"), 0);
-	glUniformMatrix4fv(glGetUniformLocation(
-		irradiance_shader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, environment_cubemap);
 
-	glViewport(0, 0, resolution, resolution);
-	glBindFramebuffer(GL_FRAMEBUFFER, capture_FBO);
-	for (unsigned int i = 0; i < 6; ++i)
-	{
-		glUniformMatrix4fv(glGetUniformLocation(
-			irradiance_shader, "view"), 1, GL_FALSE, glm::value_ptr(views[i]));
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
-			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance_cubemap, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	render_to_cubemap(irradiance_cubemap, irradiance_shader);
 
-		draw_cube();
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	std::cout << "CLEAN VERSION" << std::endl;
 }
 
 EXPORT void load_texture(const char* name, unsigned char* data, int width, int height, int components)
