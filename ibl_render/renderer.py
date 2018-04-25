@@ -57,8 +57,9 @@ while True:
     elif function == 'draw_mesh':
         transform = receive_matrix(socket)
         mesh = receive_string(socket).encode('ascii')
-        color = receive_vector(socket)
-        dll.draw_mesh(transform,c_char_p(mesh),color)
+        albedo = receive_vector(socket)
+        metallic, roughness = receive_array(socket,2,'f')
+        dll.draw_mesh(transform,c_char_p(mesh), albedo, c_float(metallic), c_float(roughness))
     elif function == 'render_end':
         pixel_count = width * height
         c_render_result = ctypes.POINTER(c_float * (pixel_count * 3))

@@ -156,13 +156,15 @@ class IBLRenderEngine(bpy.types.RenderEngine):
         for object in scene.objects:
             if object.type == 'MESH' and object.hide_render == False:
                 matrix = b_matrix_to_list(object.matrix_world)
-                color = [1.0,0.0,1.0]
+                albedo, metallic, roughness = [1.0,0.0,1.0], 0.0, 0.5
                 if len(object.material_slots) > 0 and object.material_slots[0].material:
-                    color = object.material_slots[0].material.ibl.color
+                    albedo = object.material_slots[0].material.ibl.albedo
+                    metallic = object.material_slots[0].material.ibl.metallic
+                    roughness = object.material_slots[0].material.ibl.roughness
                 renderer_call('draw_mesh', 
                               pack('f'*16,*matrix),
                               (object.data.name+'\0').encode('ascii'),
-                              pack('f'*3,*color))
+                              pack('f'*5,*albedo, metallic, roughness))
         
         renderer_call('render_end')
         global __socket
