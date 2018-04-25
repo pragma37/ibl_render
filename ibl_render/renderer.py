@@ -22,6 +22,10 @@ dll.initialize(path, width, height, 4)
 while True:
     function = receive_string(socket)
 
+    if function == 'load_hdri':
+        i_width, i_height, i_channels = receive_array(socket,3,'i')
+        pixels = receive_data(socket, i_width*i_height*i_channels*4)
+        dll.load_hdri(pixels, i_width, i_height, i_channels)
     if function == 'load_mesh':
         name = receive_string(socket).encode('ascii')
         vertex_count = receive_array(socket,1,'i')[0]
@@ -51,8 +55,9 @@ while True:
     elif function == 'draw_mesh':
         transform = receive_matrix(socket)
         mesh = receive_string(socket).encode('ascii')
-        color = receive_vector(socket)
-        dll.draw_mesh(transform,c_char_p(mesh),color)
+        albedo = receive_vector(socket)
+        metallic, roughness = receive_array(socket,2,'f')
+        dll.draw_mesh(transform,c_char_p(mesh), albedo, c_float(metallic), c_float(roughness))
     elif function == 'render_end':
         pixel_count = width * height
         c_render_result = ctypes.POINTER(c_float * (pixel_count * 3))

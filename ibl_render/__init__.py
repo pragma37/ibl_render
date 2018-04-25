@@ -45,6 +45,7 @@ class IBLRenderEngine(bpy.types.RenderEngine):
     bl_use_preview = False
     bl_use_shading_nodes = False
 
+    hdri = None
 
     def view_update(self, context):
         self.do_update(context.scene)
@@ -56,6 +57,13 @@ class IBLRenderEngine(bpy.types.RenderEngine):
     def do_update(self, scene):
         scene.world.ambient_color = [0.5, 0.5, 0.5]
         renderer_call('clean_resources')
+
+        if scene.world.ibl_hdri and scene.world.ibl_hdri != self.hdri:
+            hdri = scene.world.ibl_hdri
+            renderer_call("load_hdri",
+                          pack('iii', hdri.size[0], hdri.size[1], hdri.channels),
+                          pack('f'*len(hdri.pixels), *hdri.pixels))
+            self.hdri = hdri
 
         for object in scene.objects:
             if object.type == 'MESH' and object.hide_render == False:
@@ -148,13 +156,15 @@ class IBLRenderEngine(bpy.types.RenderEngine):
         for object in scene.objects:
             if object.type == 'MESH' and object.hide_render == False:
                 matrix = b_matrix_to_list(object.matrix_world)
-                color = [1.0,0.0,1.0]
+                albedo, metallic, roughness = [1.0,0.0,1.0], 0.0, 0.5
                 if len(object.material_slots) > 0 and object.material_slots[0].material:
-                    color = object.material_slots[0].material.ibl.color
+                    albedo = object.material_slots[0].material.ibl.albedo
+                    metallic = object.material_slots[0].material.ibl.metallic
+                    roughness = object.material_slots[0].material.ibl.roughness
                 renderer_call('draw_mesh', 
                               pack('f'*16,*matrix),
                               (object.data.name+'\0').encode('ascii'),
-                              pack('f'*3,*color))
+                              pack('f'*5,*albedo, metallic, roughness))
         
         renderer_call('render_end')
         global __socket
@@ -182,7 +192,7 @@ def register():
     adress, port = socket.getsockname()
     script_file = os.path.realpath(__file__)
     directory = os.path.dirname(script_file)
-    subprocess.Popen(['python', os.path.join(directory, 'renderer.py'), str(port)])
+    subprocess.Popen([bpy.app.binary_path_python, os.path.join(directory, 'renderer.py'), str(port)])
     socket.listen()
     connection, adress = socket.accept()
     global __socket

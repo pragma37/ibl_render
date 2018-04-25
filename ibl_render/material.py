@@ -2,11 +2,13 @@ import bpy
 
 def update_material(self, context):
     material = self.id_data
-    material.diffuse_color = self.color
+    material.diffuse_color = self.albedo
     material.specular_intensity = 0
 
 class IBLMaterialProperty(bpy.types.PropertyGroup):
-    color = bpy.props.FloatVectorProperty(name='Color', default=(0.5,0.5,0.5), subtype='COLOR', update=update_material)
+    albedo = bpy.props.FloatVectorProperty(name='Albedo', default=(0.5,0.5,0.5), subtype='COLOR', update=update_material)
+    metallic = bpy.props.FloatProperty(name='Metallic', default=0.0, min=0.0, max=1.0, update=update_material)
+    roughness = bpy.props.FloatProperty(name='Roughness', default=0.5, min=0.0, max=1.0, update=update_material)
 
 class IBLMaterial(bpy.types.Panel):
     bl_space_type = 'PROPERTIES'
@@ -74,7 +76,9 @@ class IBLMaterial(bpy.types.Panel):
         layout.label("Material Settings:")
         
         if material:
-            layout.prop(material.ibl, "color")
+            layout.prop(material.ibl, "albedo")
+            layout.prop(material.ibl, "metallic")
+            layout.prop(material.ibl, "roughness")
 
 
 def register():
