@@ -23,9 +23,7 @@ while True:
     function = receive_string(socket)
 
     if function == 'load_hdri':
-        print(function)
         i_width, i_height, i_channels = receive_array(socket,3,'i')
-        print(i_width, i_height, i_channels)
         pixels = receive_data(socket, i_width*i_height*i_channels*4)
         dll.load_hdri(pixels, i_width, i_height, i_channels)
     if function == 'load_mesh':

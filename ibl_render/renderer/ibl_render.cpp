@@ -262,7 +262,6 @@ EXPORT void load_hdri(unsigned char* data, int width, int height, int components
 			shader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
 		glViewport(0, 0, resolution, resolution);
-		//glBindFramebuffer(GL_FRAMEBUFFER, capture_FBO);
 		for (unsigned int i = 0; i < 6; i++)
 		{
 			glUniformMatrix4fv(glGetUniformLocation(
@@ -273,7 +272,6 @@ EXPORT void load_hdri(unsigned char* data, int width, int height, int components
 
 			draw_cube();
 		}
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	};
 	
 	//Setup cubemap
@@ -333,7 +331,6 @@ EXPORT void load_hdri(unsigned char* data, int width, int height, int components
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	//glBindFramebuffer(GL_FRAMEBUFFER, capture_FBO);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, resolution, resolution);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdf_lut_texture, 0);
 	glViewport(0, 0, resolution, resolution);
@@ -341,8 +338,6 @@ EXPORT void load_hdri(unsigned char* data, int width, int height, int components
 
 	glUseProgram(brdf_shader);
 	draw_quad();
-
-	std::cout << "PREFILTERED" << std::endl;
 }
 
 EXPORT void load_texture(const char* name, unsigned char* data, int width, int height, int components)
